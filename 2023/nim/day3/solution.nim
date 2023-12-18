@@ -1,48 +1,43 @@
 import ../utils
-import std/sequtils, strutils, sugar
+import std/sequtils, sets, strutils, sugar, times
 
-const ints = "0123456789"
+const emptyCell = '.'
+const ints = toHashSet(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
-proc neighbours(grid: seq[string], row, colStart, colStop: int): string =
-    # fuck it, brute force the indexes available because fuck walls
-    for x in row-1 .. row+1:
-        for y in countup(colStart-1, colStop+1):
-            try:
-                if not ints.contains($grid[x][y]):
-                    result.add($grid[x][y])
-            except IndexDefect:
-                continue
+proc getNeighbouringCells(grid: seq[string], row, colStart, colStop: int): string =
+    for x in max(0, row-1) .. min(row+1, grid.len-1):
+        for y in max(0, colStart-1) .. min(colStop+1, grid[x].len-1):
+            if not ints.contains(grid[x][y]):
+                result.add($grid[x][y])
 
+proc isValid(grid: seq[string], row, head, tail: int): bool =
+    let neighboursString = grid.getNeighbouringCells(row, head, tail)
+    result = neighboursString.any((c: char) => c != emptyCell)
+
+proc processNumber(grid: seq[string], x: int, head: int, tail: int, currentNum: string, sum: var int) =
+    let valid = grid.isValid(x, head, tail)
+    if valid:
+        sum += currentNum.parseInt
 
 proc part1(): void =
-    let grid = "input.txt".toStringSeq.mapIt(it.strip)
+    let grid = "input.txt".toStringSeq.mapIt(it.strip) # Creates an array of strings to iterate as a 2D array of chars
     var sum: int
     for x in countup(0, grid.len-1):
-        var currentNum: string
-        var head, tail: int
+        var currentNum = newStringOfCap(10)
+        var head: int
         for y in countup(0, grid[x].len-1):
             if grid[x][y] in ints:
-                if currentNum == "":
+                if currentNum.len == 0:
                     head = y
-                currentNum = currentNum & $grid[x][y]
+                currentNum.add($grid[x][y])
                 if y == grid[x].len-1:
-                    tail = y-1
-                    let neighboursString = grid.neighbours(x, head, tail)
-                    if not neighboursString.all((c: char) => c == '.'):
-                        #echo "Valid: ", currentNum
-                        sum += currentNum.parseInt
-            elif currentNum != "":
-                tail = y-1
-                let neighboursString = grid.neighbours(x, head, tail)
-                if not neighboursString.all((c: char) => c == '.'):
-                    #echo "Valid: ", currentNum
-                    sum += currentNum.parseInt
-                    #echo currentNum
-                else:
-                    echo neighboursString
-                    echo "Invalid: ", currentNum, " ", grid[x][head .. tail]
-                currentNum = ""
+                    processNumber(grid, x, head, y-1, currentNum, sum)
+            elif currentNum.len > 0:
+                processNumber(grid, x, head, y-1, currentNum, sum)
+                currentNum.setLen(0)
     echo "Sum: ", sum
 
 if isMainModule:
+    let start = cpuTime()
     part1()
+    echo "Finished in: ", cpuTime() - start, " seconds"
