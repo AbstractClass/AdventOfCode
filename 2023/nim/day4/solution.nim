@@ -1,5 +1,5 @@
 import ../utils
-import std/sequtils, sets, strutils, sugar
+import std/math, sequtils, sets, strutils, sugar, times
 
 type
     Card = ref object
@@ -24,7 +24,7 @@ proc part1(): void =
         cards.add(Card(id: i,
                        winningNumbers: numbers[0].split(" ").filter((it) => it.len > 0).toHashSet,
                        chosenNumbers: numbers[1].split(" ").filter((it) => it.len > 0).toHashSet))
-    echo "Sum of points: ", cards.map((it) => it.winnings.points).foldl(a+b)
+    echo "Sum of points: ", cards.map((it) => it.winnings.points).sum
 
 proc part2(): void =
     let rawCards = "input.txt".toStringSeq
@@ -34,18 +34,18 @@ proc part2(): void =
         cards.add(Card(id: i,
                        winningNumbers: numbers[0].split(" ").filter((it) => it.len > 0).toHashSet,
                        chosenNumbers: numbers[1].split(" ").filter((it) => it.len > 0).toHashSet))
-    for i, card in cards:
+    for idx, card in cards:
         let winningNumbers = card.winnings
         for _ in 1 .. card.copiesWon:
-            for c in 1 .. winningNumbers.len:
-                cards[i + c].copiesWon += 1
+            for winningBonus in 1 .. winningNumbers.len:
+                cards[idx + winningBonus].copiesWon.inc
 
-    let totalCards = collect:
-        for card in cards:
-            card.copiesWon
+    let totalCards = cards.map((it) => it.copiesWon).sum
     
-    echo "Total cards won: ", totalCards.foldl(a+b)
+    echo "Total cards won: ", totalCards
 
 if isMainModule:
+    let start = cpuTime()
     part1()
     part2()
+    echo "Finished in: ", cpuTime() - start, " seconds"
